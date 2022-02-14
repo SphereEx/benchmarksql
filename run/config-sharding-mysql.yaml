@@ -1,0 +1,149 @@
+dataSources:
+  ds_0:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.mysql.jdbc.Driver
+    jdbcUrl: jdbc:mysql://127.0.0.1:13306/tpcc?serverTimezone=UTC&useSSL=false&useUnicode=true&characterEncoding=UTF-8
+    username: root
+    password: root
+  ds_1:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.mysql.jdbc.Driver
+    jdbcUrl: jdbc:mysql://127.0.0.1:13307/tpcc?serverTimezone=UTC&useSSL=false&useUnicode=true&characterEncoding=UTF-8
+    username: root
+    password: root
+
+rules:
+  - !SHARDING
+    bindingTables:
+      - bmsql_warehouse, bmsql_customer
+      - bmsql_stock, bmsql_district, bmsql_order_line
+    defaultDatabaseStrategy:
+      none:
+    defaultTableStrategy:
+      none:
+    keyGenerators:
+      snowflake:
+        props:
+          worker-id: 123
+        type: SNOWFLAKE
+    tables:
+      bmsql_config:
+        actualDataNodes: ds_0.bmsql_config
+
+      bmsql_warehouse:
+        actualDataNodes: ds_${0..1}.bmsql_warehouse
+        databaseStrategy:
+          standard:
+            shardingColumn: w_id
+            shardingAlgorithmName: bmsql_warehouse_database_inline
+
+      bmsql_district:
+        actualDataNodes: ds_${0..1}.bmsql_district
+        databaseStrategy:
+          standard:
+            shardingColumn: d_w_id
+            shardingAlgorithmName: bmsql_district_database_inline
+
+      bmsql_customer:
+        actualDataNodes: ds_${0..1}.bmsql_customer
+        databaseStrategy:
+          standard:
+            shardingColumn: c_w_id
+            shardingAlgorithmName: bmsql_customer_database_inline
+
+      bmsql_item:
+        actualDataNodes: ds_${0..1}.bmsql_item
+        databaseStrategy:
+          standard:
+            shardingColumn: i_id
+            shardingAlgorithmName: bmsql_item_database_inline
+
+      bmsql_history:
+        actualDataNodes: ds_${0..1}.bmsql_history
+        databaseStrategy:
+          standard:
+            shardingColumn: h_w_id
+            shardingAlgorithmName: bmsql_history_database_inline
+
+      bmsql_oorder:
+        actualDataNodes: ds_${0..1}.bmsql_oorder_${0..1}
+        databaseStrategy:
+          standard:
+            shardingColumn: o_w_id
+            shardingAlgorithmName: bmsql_oorder_database_inline
+        tableStrategy:
+          standard:
+            shardingColumn: o_c_id
+            shardingAlgorithmName: bmsql_oorder_table_inline
+
+      bmsql_stock:
+        actualDataNodes: ds_${0..1}.bmsql_stock
+        databaseStrategy:
+          standard:
+            shardingColumn: s_w_id
+            shardingAlgorithmName: bmsql_stock_database_inline
+
+      bmsql_new_order:
+        actualDataNodes: ds_${0..1}.bmsql_new_order
+        databaseStrategy:
+          standard:
+            shardingColumn: no_w_id
+            shardingAlgorithmName: bmsql_new_order_database_inline
+
+      bmsql_order_line:
+        actualDataNodes: ds_${0..1}.bmsql_order_line
+        databaseStrategy:
+          standard:
+            shardingColumn: ol_w_id
+            shardingAlgorithmName: bmsql_order_line_database_inline
+
+    shardingAlgorithms:
+      bmsql_warehouse_database_inline:
+        type: INLINE
+        props:
+          algorithm-expression: ds_${w_id % 2}
+
+      bmsql_district_database_inline:
+        type: INLINE
+        props:
+          algorithm-expression: ds_${d_w_id % 2}
+
+      bmsql_customer_database_inline:
+        type: INLINE
+        props:
+          algorithm-expression: ds_${c_w_id % 2}
+
+      bmsql_item_database_inline:
+        type: INLINE
+        props:
+          algorithm-expression: ds_${i_id % 2}
+
+      bmsql_history_database_inline:
+        type: INLINE
+        props:
+          algorithm-expression: ds_${h_w_id % 2}
+
+      bmsql_oorder_database_inline:
+        type: INLINE
+        props:
+          algorithm-expression: ds_${o_w_id % 2}
+
+      bmsql_oorder_table_inline:
+        type: INLINE
+        props:
+          algorithm-expression: bmsql_oorder_${o_c_id % 2}
+
+      bmsql_stock_database_inline:
+        type: INLINE
+        props:
+          algorithm-expression: ds_${s_w_id % 2}
+
+      bmsql_new_order_database_inline:
+        type: INLINE
+        props:
+          algorithm-expression: ds_${no_w_id % 2}
+
+      bmsql_order_line_database_inline:
+        type: INLINE
+        props:
+          algorithm-expression: ds_${ol_w_id % 2}

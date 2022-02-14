@@ -7,14 +7,26 @@
  *
  */
 
-import org.apache.log4j.*;
+import org.apache.log4j.Logger;
+import org.apache.log4j.PropertyConfigurator;
+import org.apache.shardingsphere.driver.api.yaml.YamlShardingSphereDataSourceFactory;
 
-import java.io.*;
-import java.nio.file.*;
-import java.sql.*;
-import java.util.*;
+import javax.sql.DataSource;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.nio.file.Files;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Formatter;
+import java.util.Properties;
 import java.util.regex.Pattern;
-import java.text.*;
 
 
 public class jTPCC implements jTPCCConfig
@@ -85,6 +97,7 @@ public class jTPCC implements jTPCCConfig
 	String  iConn               = getProp(ini,"conn");
 	String  iUser               = getProp(ini,"user");
 	String  iPassword           = ini.getProperty("password");
+	String ssJdbcYamlLocation = getProp(ini,"ssJdbcYamlLocation");
 
 	log.info("Term-00, ");
 	String  iWarehouses         = getProp(ini,"warehouses");
@@ -472,7 +485,14 @@ public class jTPCC implements jTPCCConfig
 			String terminalName = "Term-" + (i>=9 ? ""+(i+1) : "0"+(i+1));
 			Connection conn = null;
 			printMessage("Creating database connection for " + terminalName + "...");
-			conn = DriverManager.getConnection(database, dbProps);
+			if (ssJdbcYamlLocation != null) {
+				// 创建 ShardingSphereDataSource
+				printMessage("Creating ss datasource ...");
+				DataSource dataSource = YamlShardingSphereDataSourceFactory.createDataSource(new File(ssJdbcYamlLocation));
+				conn = dataSource.getConnection();
+			} else {
+				conn = DriverManager.getConnection(database, dbProps);
+			}
 			conn.setAutoCommit(false);
 
 			jTPCCTerminal terminal = new jTPCCTerminal
