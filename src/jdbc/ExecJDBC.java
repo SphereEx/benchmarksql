@@ -43,7 +43,7 @@ public class ExecJDBC {
     // make connection
     String ssJdbcYamlLocation = ini.getProperty("ssJdbcYamlLocation"); 
     if (ssJdbcYamlLocation != null) {
-        // 创建 ShardingSphereDataSource
+        // create ShardingSphereDataSource
         System.out.println("Creating ss datasource ..., jdbcLocation=" + ssJdbcYamlLocation);
         DataSource dataSource = YamlShardingSphereDataSourceFactory.createDataSource(new File(ssJdbcYamlLocation));
         conn = dataSource.getConnection();

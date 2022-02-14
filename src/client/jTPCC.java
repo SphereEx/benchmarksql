@@ -486,7 +486,7 @@ public class jTPCC implements jTPCCConfig
 			Connection conn = null;
 			printMessage("Creating database connection for " + terminalName + "...");
 			if (ssJdbcYamlLocation != null) {
-				// 创建 ShardingSphereDataSource
+				// create ShardingSphereDataSource
 				printMessage("Creating ss datasource ...");
 				DataSource dataSource = YamlShardingSphereDataSourceFactory.createDataSource(new File(ssJdbcYamlLocation));
 				conn = dataSource.getConnection();
