@@ -17,5 +17,6 @@ source funcs.sh $1
 setCP || exit 1
 
 myOPTS="-Dprop=$1 -DrunID=${SEQ}"
-
-java -cp "$myCP" $myOPTS jTPCC
+jvmOPTS="-server -Xmx16g -Xms16g -Xmn10g -Xss1m"
+nmon -f -s 60 -c 10
+java -cp "$myCP" $myOPTS $jvmOPTS jTPCC

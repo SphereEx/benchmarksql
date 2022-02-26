@@ -2,9 +2,9 @@ db=postgres
 driver=org.postgresql.Driver
 conn=jdbc:postgresql://127.0.0.1:15432/tpcc
 user=test
-password=
+password=root
 
-ssJdbcYamlLocation=/opt/ss-jdbc4-pg.yaml
+ssJdbcYamlLocation=ss-jdbc4-pg.yaml
 
 warehouses=200
 loadWorkers=200

@@ -2,9 +2,9 @@ db=postgres
 driver=com.mysql.jdbc.Driver
 conn=jdbc:mysql://127.0.0.1:3306/tpcc?serverTimezone=UTC&useSSL=false
 user=root
-password=
+password=root
 
-ssJdbcYamlLocation=/opt/ss-jdbc4-mysql.yaml
+ssJdbcYamlLocation=ss-jdbc4-mysql.yaml
 
 warehouses=200
 loadWorkers=200

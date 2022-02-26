@@ -486,13 +486,13 @@ public class jTPCC implements jTPCCConfig
 			Connection conn = null;
 			printMessage("Creating database connection for " + terminalName + "...");
 			if (ssJdbcYamlLocation != null) {
-				// create ShardingSphereDataSource
-				printMessage("Creating ss datasource ...");
-				DataSource dataSource = YamlShardingSphereDataSourceFactory.createDataSource(new File(ssJdbcYamlLocation));
-				conn = dataSource.getConnection();
-			} else {
-				conn = DriverManager.getConnection(database, dbProps);
-			}
+					// 创建 ShardingSphereDataSource
+					printMessage("Creating ss datasource ...");
+					DataSource dataSource = YamlShardingSphereDataSourceFactory.createDataSource(new File(ssJdbcYamlLocation));
+					conn = dataSource.getConnection();
+				} else {
+					conn = DriverManager.getConnection(database, dbProps);
+				}
 			conn.setAutoCommit(false);
 
 			jTPCCTerminal terminal = new jTPCCTerminal
@@ -571,7 +571,9 @@ public class jTPCC implements jTPCCConfig
 
 		catch(Exception e1)
 		{
-		    errorMessage("This session ended with errors!");
+		 
+            e1.printStackTrace();
+              errorMessage("This session ended with errors!");
 		    printStreamReport.close();
 		    fileOutputStream.close();
 

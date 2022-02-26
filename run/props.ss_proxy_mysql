@@ -2,7 +2,7 @@ db=postgres
 driver=com.mysql.jdbc.Driver
 conn=jdbc:mysql://127.0.0.1:3307/tpcc?serverTimezone=UTC&useSSL=false&cachePrepStmts=true&prepStmtCacheSize=8000
 user=root
-password=
+password=root
 
 warehouses=200
 loadWorkers=200

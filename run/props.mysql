@@ -1,8 +1,8 @@
 db=postgres
-driver=org.postgresql.Driver
-conn=jdbc:postgresql://127.0.0.1:3307/tpcc
+driver=com.mysql.jdbc.Driver
+conn=jdbc:mysql://127.0.0.1:3306/tpcc_mysql?serverTimezone=UTC&useSSL=false&cachePrepStmts=true&prepStmtCacheSize=8000
 user=root
-password=
+password=root
 
 warehouses=200
 loadWorkers=200
@@ -11,7 +11,7 @@ terminals=200
 //To run specified transactions per terminal- runMins must equal zero
 runTxnsPerTerminal=0
 //To run for specified minutes- runTxnsPerTerminal must equal zero
-runMins=10
+runMins=2
 //Number of total transactions per minute
 limitTxnsPerMin=0
 

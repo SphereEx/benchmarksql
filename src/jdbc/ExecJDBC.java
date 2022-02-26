@@ -41,15 +41,16 @@ public class ExecJDBC {
     Class.forName(ini.getProperty( "driver" ));
 
     // make connection
-    String ssJdbcYamlLocation = ini.getProperty("ssJdbcYamlLocation"); 
-    if (ssJdbcYamlLocation != null) {
-        // create ShardingSphereDataSource
-        System.out.println("Creating ss datasource ..., jdbcLocation=" + ssJdbcYamlLocation);
-        DataSource dataSource = YamlShardingSphereDataSourceFactory.createDataSource(new File(ssJdbcYamlLocation));
-        conn = dataSource.getConnection();
-    } else {
-        conn = DriverManager.getConnection(ini.getProperty("conn"), ini.getProperty("user"), ini.getProperty("password"));
-    }
+        String ssJdbcYamlLocation = ini.getProperty("ssJdbcYamlLocation");
+        if (ssJdbcYamlLocation != null) {
+            // 创建 ShardingSphereDataSource
+            System.out.println("Creating ss datasource ..., jdbcLocation=" + ssJdbcYamlLocation);
+            DataSource dataSource = YamlShardingSphereDataSourceFactory.createDataSource(new File(ssJdbcYamlLocation));
+            conn = dataSource.getConnection();
+        } else {
+            conn = DriverManager.getConnection(ini.getProperty("conn"),
+                    ini.getProperty("user"),ini.getProperty("password"));
+        }
     conn.setAutoCommit(true);
 
     // Create Statement

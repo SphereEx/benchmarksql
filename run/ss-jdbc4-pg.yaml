@@ -2,9 +2,9 @@ schemaName: tpcc
 dataSources:
   ds_0:
     dataSourceClassName: com.zaxxer.hikari.HikariDataSource
-    jdbcUrl: jdbc:postgresql://10.0.0.12:15432/tpcc
+    jdbcUrl: jdbc:postgresql://10.0.0.12:5432/tpcc
     username: test
-    password:
+    password: test
     connectionTimeoutMilliseconds: 10000
     idleTimeoutMilliseconds: 60000
     maxLifetimeMilliseconds: 1800000
@@ -12,9 +12,9 @@ dataSources:
     minPoolSize: 1
   ds_1:
     dataSourceClassName: com.zaxxer.hikari.HikariDataSource
-    jdbcUrl: jdbc:postgresql://10.0.0.62:15432/tpcc
+    jdbcUrl: jdbc:postgresql://10.0.0.62:5432/tpcc
     username: test
-    password:
+    password: test
     connectionTimeoutMilliseconds: 10000
     idleTimeoutMilliseconds: 60000
     maxLifetimeMilliseconds: 1800000
@@ -22,9 +22,9 @@ dataSources:
     minPoolSize: 1
   ds_2:
     dataSourceClassName: com.zaxxer.hikari.HikariDataSource
-    jdbcUrl: jdbc:postgresql://10.0.0.192:15432/tpcc
+    jdbcUrl: jdbc:postgresql://10.0.0.192:5432/tpcc
     username: test
-    password:
+    password: test
     connectionTimeoutMilliseconds: 10000
     idleTimeoutMilliseconds: 60000
     maxLifetimeMilliseconds: 1800000
@@ -32,9 +32,9 @@ dataSources:
     minPoolSize: 1
   ds_3:
     dataSourceClassName: com.zaxxer.hikari.HikariDataSource
-    jdbcUrl: jdbc:postgresql://10.0.0.120:15432/tpcc
+    jdbcUrl: jdbc:postgresql://10.0.0.120:5432/tpcc
     username: test
-    password:
+    password: test
     connectionTimeoutMilliseconds: 10000
     idleTimeoutMilliseconds: 60000
     maxLifetimeMilliseconds: 1800000
@@ -42,9 +42,9 @@ dataSources:
     minPoolSize: 1
   ds_4:
     dataSourceClassName: com.zaxxer.hikari.HikariDataSource
-    jdbcUrl: jdbc:postgresql://10.0.0.16:15432/tpcc
+    jdbcUrl: jdbc:postgresql://10.0.0.16:5432/tpcc
     username: test
-    password:
+    password: test
     connectionTimeoutMilliseconds: 10000
     idleTimeoutMilliseconds: 60000
     maxLifetimeMilliseconds: 1800000
