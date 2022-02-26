@@ -4,7 +4,6 @@ dist
 # maven ignore
 target/
 *.class
-*.jar
 *.war
 *.zip
 *.tar
