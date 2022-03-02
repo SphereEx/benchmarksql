@@ -464,6 +464,13 @@ public class jTPCC implements jTPCCConfig
 		    String database = iConn;
 		    String username = iUser;
 		    String password = iPassword;
+			DataSource dataSource = null;
+			
+			if (ssJdbcYamlLocation != null) {
+				// 创建 ShardingSphereDataSource
+				printMessage("Creating ss datasource ...");
+				dataSource = YamlShardingSphereDataSourceFactory.createDataSource(new File(ssJdbcYamlLocation));
+			}
 
 		    int[][] usedTerminals = new int[numWarehouses][10];
 		    for(int i = 0; i < numWarehouses; i++)
@@ -486,13 +493,10 @@ public class jTPCC implements jTPCCConfig
 			Connection conn = null;
 			printMessage("Creating database connection for " + terminalName + "...");
 			if (ssJdbcYamlLocation != null) {
-					// 创建 ShardingSphereDataSource
-					printMessage("Creating ss datasource ...");
-					DataSource dataSource = YamlShardingSphereDataSourceFactory.createDataSource(new File(ssJdbcYamlLocation));
 					conn = dataSource.getConnection();
-				} else {
+			} else {
 					conn = DriverManager.getConnection(database, dbProps);
-				}
+			}
 			conn.setAutoCommit(false);
 
 			jTPCCTerminal terminal = new jTPCCTerminal
