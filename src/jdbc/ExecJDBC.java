@@ -7,8 +7,7 @@
  *
  */
 
-import org.apache.shardingsphere.driver.api.yaml.YamlShardingSphereDataSourceFactory;
-
+import org.apache.shardingsphere.shardingjdbc.api.yaml.YamlShardingDataSourceFactory;
 import javax.sql.DataSource;
 import java.io.BufferedReader;
 import java.io.File;
@@ -45,7 +44,7 @@ public class ExecJDBC {
         if (ssJdbcYamlLocation != null) {
             // 创建 ShardingSphereDataSource
             System.out.println("Creating ss datasource ..., jdbcLocation=" + ssJdbcYamlLocation);
-            DataSource dataSource = YamlShardingSphereDataSourceFactory.createDataSource(new File(ssJdbcYamlLocation));
+            DataSource dataSource = YamlShardingDataSourceFactory.createDataSource(new File(ssJdbcYamlLocation));
             conn = dataSource.getConnection();
         } else {
             conn = DriverManager.getConnection(ini.getProperty("conn"),

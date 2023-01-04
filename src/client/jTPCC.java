@@ -9,7 +9,7 @@
 
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
-import org.apache.shardingsphere.driver.api.yaml.YamlShardingSphereDataSourceFactory;
+import org.apache.shardingsphere.shardingjdbc.api.yaml.YamlShardingDataSourceFactory;
 
 import javax.sql.DataSource;
 import java.io.BufferedWriter;
@@ -469,7 +469,7 @@ public class jTPCC implements jTPCCConfig
 			if (ssJdbcYamlLocation != null) {
 				// 创建 ShardingSphereDataSource
 				printMessage("Creating ss datasource ...");
-				dataSource = YamlShardingSphereDataSourceFactory.createDataSource(new File(ssJdbcYamlLocation));
+				dataSource = YamlShardingDataSourceFactory.createDataSource(new File(ssJdbcYamlLocation));
 			}
 
 		    int[][] usedTerminals = new int[numWarehouses][10];
