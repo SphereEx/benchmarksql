@@ -9,6 +9,8 @@
  *
  */
 
+import org.justbk.perf.common.sql.DbProxyFactory;
+
 import java.util.*;
 import java.sql.*;
 
@@ -40,7 +42,8 @@ public class jTPCCConnection
 
     public PreparedStatement    stmtOrderStatusSelectCustomerListByLast;
     public PreparedStatement    stmtOrderStatusSelectCustomer;
-    public PreparedStatement    stmtOrderStatusSelectLastOrder;
+	public PreparedStatement    stmtOrderStatusSelectMaxOid;
+	public PreparedStatement    stmtOrderStatusSelectLastOrder;
     public PreparedStatement    stmtOrderStatusSelectOrderLine;
 
     public PreparedStatement    stmtStockLevelSelectLow;
@@ -56,14 +59,15 @@ public class jTPCCConnection
     public jTPCCConnection(Connection dbConn, int dbType)
 	throws SQLException
     {
-	this.dbConn = dbConn;
+	this.dbConn = DbProxyFactory.dynamicProxyConnection(dbConn, PerfermanceFactory.instance.perfFactory);
 	this.dbType = dbType;
+	dbConn = this.dbConn;
 
 	// PreparedStataments for NEW_ORDER
 	stmtNewOrderSelectWhseCust = dbConn.prepareStatement(
 		"SELECT c_discount, c_last, c_credit, w_tax " +
-		"    FROM bmsql_customer " +
-		"    JOIN bmsql_warehouse ON (w_id = c_w_id) " +
+		"    FROM bmsql_customer c " +
+		"    JOIN bmsql_warehouse w ON (w.w_id = c.c_w_id) " +
 		"    WHERE c_w_id = ? AND c_d_id = ? AND c_id = ?");
 	stmtNewOrderSelectDist = dbConn.prepareStatement(
 		"SELECT d_tax, d_next_o_id " +
@@ -172,15 +176,16 @@ public class jTPCCConnection
 		"SELECT c_first, c_middle, c_last, c_balance " +
 		"    FROM bmsql_customer " +
 		"    WHERE c_w_id = ? AND c_d_id = ? AND c_id = ?");
+	
+	stmtOrderStatusSelectMaxOid = dbConn.prepareStatement(
+		"SELECT max(o_id) " +
+			"FROM bmsql_oorder " +
+			"WHERE o_w_id = ? AND o_d_id = ? AND o_c_id = ?");
 	stmtOrderStatusSelectLastOrder = dbConn.prepareStatement(
 		"SELECT o_id, o_entry_d, o_carrier_id " +
 		"    FROM bmsql_oorder " +
 		"    WHERE o_w_id = ? AND o_d_id = ? AND o_c_id = ? " +
-		"      AND o_id = (" +
-		"          SELECT max(o_id) " +
-		"              FROM bmsql_oorder " +
-		"              WHERE o_w_id = ? AND o_d_id = ? AND o_c_id = ?" +
-		"          )");
+		"      AND o_id = ?");
 	stmtOrderStatusSelectOrderLine = dbConn.prepareStatement(
 		"SELECT ol_i_id, ol_supply_w_id, ol_quantity, " +
 		"       ol_amount, ol_delivery_d " +
@@ -232,6 +237,7 @@ public class jTPCCConnection
 		"    FROM bmsql_new_order " +
 		"    WHERE no_w_id = ? AND no_d_id = ? " +
 		"    ORDER BY no_o_id ASC");
+	stmtDeliveryBGSelectOldestNewOrder.setFetchSize(1);
 	stmtDeliveryBGDeleteOldestNewOrder = dbConn.prepareStatement(
 		"DELETE FROM bmsql_new_order " +
 		"    WHERE no_w_id = ? AND no_d_id = ? AND no_o_id = ?");
@@ -261,7 +267,7 @@ public class jTPCCConnection
     public jTPCCConnection(String connURL, Properties connProps, int dbType)
 	throws SQLException
     {
-	this(DriverManager.getConnection(connURL, connProps), dbType);
+	this(ShardingJdbc.getConnection(connURL, connProps), dbType);
     }
 
     public void commit()

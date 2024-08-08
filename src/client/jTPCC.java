@@ -7,33 +7,32 @@
  *
  */
 
-import org.apache.log4j.Logger;
-import org.apache.log4j.PropertyConfigurator;
-import org.apache.shardingsphere.driver.api.yaml.YamlShardingSphereDataSourceFactory;
+import org.apache.log4j.*;
 
-import javax.sql.DataSource;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintStream;
-import java.nio.file.Files;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Formatter;
-import java.util.Properties;
+import java.io.*;
+import java.nio.file.*;
+import java.sql.*;
+import java.util.*;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Pattern;
+import java.text.*;
 
 
 public class jTPCC implements jTPCCConfig
 {
+	private final BlockingQueue<String> CSV_OUTPUT_QUEUE = new LinkedBlockingQueue<>();
+	private Thread csvWriterThread;
+	private final AtomicBoolean ENDED = new AtomicBoolean(false);
+	
     private static org.apache.log4j.Logger log = Logger.getLogger(jTPCC.class);
     private static String               resultDirName = null;
-    private static BufferedWriter       resultCSV = null;
+    private volatile static BufferedWriter       resultCSV = null;
     private static BufferedWriter       runInfoCSV = null;
     private static int                  runID = 0;
 
@@ -43,12 +42,15 @@ public class jTPCC implements jTPCCConfig
     private jTPCCTerminal[] terminals;
     private String[] terminalNames;
     private boolean terminalsBlockingExit = false;
-    private long terminalsStarted = 0, sessionCount = 0, transactionCount = 0;
+    private long terminalsStarted = 0, sessionCount = 0;
+	private final AtomicLong transactionCount = new AtomicLong(0);
     private Object counterLock = new Object();
 
     private long newOrderCounter = 0, sessionStartTimestamp, sessionEndTimestamp, sessionNextTimestamp=0, sessionNextKounter=0;
-    private long sessionEndTargetTime = -1, fastNewOrderCounter, recentTpmC=0, recentTpmTotal=0;
+    private long sessionEndTargetTime = -1,  recentTpmC=0, recentTpmTotal=0;
     private boolean signalTerminalsRequestEndSent = false, databaseDriverLoaded = false;
+	
+	private final AtomicLong fastNewOrderCounter = new AtomicLong(0);
 
     private FileOutputStream fileOutputStream;
     private PrintStream printStreamReport;
@@ -61,8 +63,10 @@ public class jTPCC implements jTPCCConfig
 
     public static void main(String args[])
     {
-	PropertyConfigurator.configure("log4j.properties");
+	String log4jProperties = RunConfigSet.getConfigAbsPath("log4j.properties");
+	PropertyConfigurator.configure(log4jProperties);
 	new jTPCC();
+//	System.exit(0);
     }
 
     private String getProp (Properties p, String pName)
@@ -78,6 +82,7 @@ public class jTPCC implements jTPCCConfig
 	// load the ini file
 	Properties ini = new Properties();
 	try {
+	  RunConfigSet.runInit();
 	  ini.load( new FileInputStream(System.getProperty("prop")));
 	} catch (IOException e) {
 	  errorMessage("Term-00, could not load properties file");
@@ -92,12 +97,14 @@ public class jTPCC implements jTPCCConfig
 	log.info("Term-00,  (c) 2016, Jan Wieck");
 	log.info("Term-00, +-------------------------------------------------------------+");
 	log.info("Term-00, ");
+	
+	PropertiesFactory.instance.init(ini);
+	
 	String  iDB                 = getProp(ini,"db");
 	String  iDriver             = getProp(ini,"driver");
 	String  iConn               = getProp(ini,"conn");
 	String  iUser               = getProp(ini,"user");
 	String  iPassword           = ini.getProperty("password");
-	String ssJdbcYamlLocation = getProp(ini,"ssJdbcYamlLocation");
 
 	log.info("Term-00, ");
 	String  iWarehouses         = getProp(ini,"warehouses");
@@ -160,6 +167,7 @@ public class jTPCC implements jTPCCConfig
 	{
 	    errorMessage("Unable to load the database driver!");
 	    databaseDriverLoaded = false;
+		throw new RuntimeException(ex);
 	}
 
 	if (databaseDriverLoaded && resultDirectory != null)
@@ -259,6 +267,21 @@ public class jTPCC implements jTPCCConfig
 	    }
 	    log.info("Term-00, writing per transaction results to " +
 		     resultCSVName);
+		csvWriterThread = new Thread(() -> {
+			while (!ENDED.get() || !CSV_OUTPUT_QUEUE.isEmpty() || !Thread.currentThread().isInterrupted()) {
+				try {
+					String output = CSV_OUTPUT_QUEUE.poll(100, TimeUnit.MILLISECONDS);
+					if (null != output && null != resultCSV) {
+						resultCSV.write(output);
+					}
+				} catch (final InterruptedException ignored) {
+					Thread.currentThread().interrupt();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		});
+		csvWriterThread.start();
 
 	    if (osCollectorScript != null)
 	    {
@@ -290,6 +313,11 @@ public class jTPCC implements jTPCCConfig
 		Properties dbProps = new Properties();
 		dbProps.setProperty("user", iUser);
 		dbProps.setProperty("password", iPassword);
+		try {
+			dbProps.setProperty("config", getProp(ini, "config"));
+		} catch (Exception exp) {
+
+		}
 
 		/*
 		 * Fine tuning of database conneciton parameters if needed.
@@ -329,8 +357,9 @@ public class jTPCC implements jTPCCConfig
 		log.info("Term-00, C value for C_LAST during load: " + CLoad);
 		log.info("Term-00, C value for C_LAST this run:    " + rnd.getNURandCLast());
 		log.info("Term-00, ");
+		ShardingNumber.init(rnd.getNURandCI_ID());
 
-		fastNewOrderCounter = 0;
+		fastNewOrderCounter.set(0);
 		updateStatusLine();
 
 		try
@@ -350,8 +379,8 @@ public class jTPCC implements jTPCCConfig
 		}
 		catch(NumberFormatException e1)
 		{
-		    errorMessage("Must indicate either transactions per terminal or number of run minutes!");
-		    throw new Exception();
+			errorMessage("Must indicate either transactions per terminal or number of run minutes!");
+		    throw e1;
 		}
 
 		try
@@ -363,13 +392,13 @@ public class jTPCC implements jTPCCConfig
 		catch(NumberFormatException e1)
 		{
 		    errorMessage("Invalid number of warehouses!");
-		    throw new Exception();
+			throw e1;
 		}
 		if(numWarehouses > loadWarehouses)
 		{
 		    errorMessage("numWarehouses cannot be greater " +
 				 "than the warehouses loaded in the database");
-		    throw new Exception();
+		    throw new RuntimeException();
 		}
 
 		try
@@ -381,7 +410,7 @@ public class jTPCC implements jTPCCConfig
 		catch(NumberFormatException e1)
 		{
 		    errorMessage("Invalid number of terminals!");
-		    throw new Exception();
+			throw e1;
 		}
 
 
@@ -397,7 +426,7 @@ public class jTPCC implements jTPCCConfig
 		    catch(NumberFormatException e1)
 		    {
 			errorMessage("Invalid number of minutes!");
-			throw new Exception();
+			throw e1;
 		    }
 		}
 		else
@@ -411,7 +440,7 @@ public class jTPCC implements jTPCCConfig
 		    catch(NumberFormatException e1)
 		    {
 			errorMessage("Invalid number of transactions per terminal!");
-			throw new Exception();
+			throw e1;
 		    }
 		}
 
@@ -433,7 +462,7 @@ public class jTPCC implements jTPCCConfig
 		catch(NumberFormatException e1)
 		{
 		    errorMessage("Invalid number in mix percentage!");
-		    throw new Exception();
+		    throw e1;
 		}
 
 		if(newOrderWeightValue + paymentWeightValue + orderStatusWeightValue + deliveryWeightValue + stockLevelWeightValue > 100)
@@ -464,27 +493,21 @@ public class jTPCC implements jTPCCConfig
 		    String database = iConn;
 		    String username = iUser;
 		    String password = iPassword;
-			DataSource dataSource = null;
-			
-			if (ssJdbcYamlLocation != null) {
-				// 创建 ShardingSphereDataSource
-				printMessage("Creating ss datasource ...");
-				dataSource = YamlShardingSphereDataSourceFactory.createDataSource(new File(ssJdbcYamlLocation));
-			}
 
 		    int[][] usedTerminals = new int[numWarehouses][10];
 		    for(int i = 0; i < numWarehouses; i++)
 			for(int j = 0; j < 10; j++)
 			    usedTerminals[i][j] = 0;
 
+			int warehouseBase = PropertiesFactory.instance.getWarehouseRange();
 		    for(int i = 0; i < numTerminals; i++)
 		    {
 			int terminalWarehouseID;
 			int terminalDistrictID;
 			do
 			{
-			    terminalWarehouseID = rnd.nextInt(1, numWarehouses);
-			    terminalDistrictID = rnd.nextInt(1, 10);
+			    terminalWarehouseID = PropertiesFactory.instance.wareHouseRangeConvert(rnd.nextInt(1, warehouseBase));
+				terminalDistrictID = rnd.nextInt(1, 10);
 			}
 			while(usedTerminals[terminalWarehouseID-1][terminalDistrictID-1] == 1);
 			usedTerminals[terminalWarehouseID-1][terminalDistrictID-1] = 1;
@@ -492,11 +515,7 @@ public class jTPCC implements jTPCCConfig
 			String terminalName = "Term-" + (i>=9 ? ""+(i+1) : "0"+(i+1));
 			Connection conn = null;
 			printMessage("Creating database connection for " + terminalName + "...");
-			if (ssJdbcYamlLocation != null) {
-					conn = dataSource.getConnection();
-			} else {
-					conn = DriverManager.getConnection(database, dbProps);
-			}
+			conn = ShardingJdbc.getConnection(database, dbProps);
 			conn.setAutoCommit(false);
 
 			jTPCCTerminal terminal = new jTPCCTerminal
@@ -564,7 +583,7 @@ public class jTPCC implements jTPCCConfig
 		    synchronized(terminals)
 		    {
 			printMessage("Starting all terminals...");
-			transactionCount = 1;
+			transactionCount.set(1);
 			for(int i = 0; i < terminals.length; i++)
 			    (new Thread(terminals[i])).start();
 
@@ -575,18 +594,17 @@ public class jTPCC implements jTPCCConfig
 
 		catch(Exception e1)
 		{
-		 
-            e1.printStackTrace();
-              errorMessage("This session ended with errors!");
+		    errorMessage("This session ended with errors!" + e1.toString());
 		    printStreamReport.close();
 		    fileOutputStream.close();
 
-		    throw new Exception();
+		    throw e1;
 		}
 
 	    }
 	    catch(Exception ex)
 	    {
+			throw new RuntimeException(ex);
 	    }
 	}
 	updateStatusLine();
@@ -636,7 +654,8 @@ public class jTPCC implements jTPCCConfig
 	    sessionEndTimestamp = System.currentTimeMillis();
 	    sessionEndTargetTime = -1;
 	    printMessage("All terminals finished executing " + sessionEnd);
-	    endReport();
+		PerfermanceFactory.instance.perfFactory.print();
+		endReport();
 	    terminalsBlockingExit = false;
 	    printMessage("Session finished!");
 
@@ -661,11 +680,8 @@ public class jTPCC implements jTPCCConfig
 
     public void signalTerminalEndedTransaction(String terminalName, String transactionType, long executionTime, String comment, int newOrder)
     {
-	synchronized (counterLock)
-	{
-	    transactionCount++;
-	    fastNewOrderCounter += newOrder;
-	}
+	    transactionCount.incrementAndGet();
+	    fastNewOrderCounter.addAndGet(newOrder);
 
 	if(sessionEndTargetTime != -1 && System.currentTimeMillis() > sessionEndTargetTime)
 	{
@@ -685,36 +701,41 @@ public class jTPCC implements jTPCCConfig
     {
 	if (resultCSV != null)
 	{
-	    try
-	    {
-		resultCSV.write(runID + "," +
-				term.resultLine(sessionStartTimestamp));
-	    }
-	    catch (IOException e)
-	    {
-		log.error("Term-00, " + e.getMessage());
-	    }
+		CSV_OUTPUT_QUEUE.offer(runID + "," + term.resultLine(sessionStartTimestamp));
 	}
     }
 
-    private void endReport()
-    {
-	long currTimeMillis = System.currentTimeMillis();
-	long freeMem = Runtime.getRuntime().freeMemory() / (1024*1024);
-	long totalMem = Runtime.getRuntime().totalMemory() / (1024*1024);
-	double tpmC = (6000000*fastNewOrderCounter/(currTimeMillis - sessionStartTimestamp))/100.0;
-	double tpmTotal = (6000000*transactionCount/(currTimeMillis - sessionStartTimestamp))/100.0;
-
-	System.out.println("");
-	log.info("Term-00, ");
-	log.info("Term-00, ");
-	log.info("Term-00, Measured tpmC (NewOrders) = " + tpmC);
-	log.info("Term-00, Measured tpmTOTAL = " + tpmTotal);
-	log.info("Term-00, Session Start     = " + sessionStart );
-	log.info("Term-00, Session End       = " + sessionEnd);
-	log.info("Term-00, Transaction Count = " + (transactionCount-1));
-
-    }
+    private void endReport() {
+		long currTimeMillis = System.currentTimeMillis();
+		long freeMem = Runtime.getRuntime().freeMemory() / (1024 * 1024);
+		long totalMem = Runtime.getRuntime().totalMemory() / (1024 * 1024);
+		double tpmC = (6000000 * fastNewOrderCounter.get() / (currTimeMillis - sessionStartTimestamp)) / 100.0;
+		double tpmTotal = (6000000 * transactionCount.get() / (currTimeMillis - sessionStartTimestamp)) / 100.0;
+	
+		System.out.println("");
+		List<String> infos = new LinkedList<>();
+		infos.add("Term-00, ");
+		infos.add("Term-00, ");
+		infos.add("Term-00, Measured tpmC (NewOrders) = " + tpmC);
+		infos.add("Term-00, Measured tpmTOTAL = " + tpmTotal);
+		infos.add("Term-00, Session Start     = " + sessionStart);
+		infos.add("Term-00, Session End       = " + sessionEnd);
+		infos.add("Term-00, Transaction Count = " + (transactionCount.get() - 1));
+		
+		ENDED.set(true);
+		if (null != csvWriterThread) {
+			csvWriterThread.interrupt();
+		}
+		
+		infos.forEach(
+				info -> {
+					log.info(info);
+					if (PropertiesFactory.instance.useProxy) {
+					    PerfermanceFactory.instance.perfFactory.printLog(info);
+					}
+				}
+		);
+	}
 
     private void printMessage(String message)
     {
@@ -742,25 +763,33 @@ public class jTPCC implements jTPCCConfig
 	return dateFormat.format(new java.util.Date());
     }
 
-    synchronized private void updateStatusLine()
-    {
+	private final Lock statusLineLock = new ReentrantLock();
+	
+//    synchronized private void updateStatusLine()
+	private void updateStatusLine()
+	{
+		if (!statusLineLock.tryLock()) {
+			return;
+		}
 	long currTimeMillis = System.currentTimeMillis();
-
+		
+		try {
 	if(currTimeMillis > sessionNextTimestamp)
 	{
+			
 	    StringBuilder informativeText = new StringBuilder("");
 	    Formatter fmt = new Formatter(informativeText);
-	    double tpmC = (6000000*fastNewOrderCounter/(currTimeMillis - sessionStartTimestamp))/100.0;
-	    double tpmTotal = (6000000*transactionCount/(currTimeMillis - sessionStartTimestamp))/100.0;
+	    double tpmC = (6000000*fastNewOrderCounter.get()/(currTimeMillis - sessionStartTimestamp))/100.0;
+	    double tpmTotal = (6000000*transactionCount.get()/(currTimeMillis - sessionStartTimestamp))/100.0;
 
 	    sessionNextTimestamp += 1000;  /* update this every seconds */
 
 	    fmt.format("Term-00, Running Average tpmTOTAL: %.2f", tpmTotal);
 
 	    /* XXX What is the meaning of these numbers? */
-	    recentTpmC = (fastNewOrderCounter - sessionNextKounter) * 12;
-	    recentTpmTotal= (transactionCount-sessionNextKounter)*12;
-	    sessionNextKounter = fastNewOrderCounter;
+	    recentTpmC = (fastNewOrderCounter.get() - sessionNextKounter) * 12;
+	    recentTpmTotal= (transactionCount.get()-sessionNextKounter)*12;
+	    sessionNextKounter = fastNewOrderCounter.get();
 	    fmt.format("    Current tpmTOTAL: %d", recentTpmTotal);
 
 	    long freeMem = Runtime.getRuntime().freeMemory() / (1024*1024);
@@ -771,5 +800,8 @@ public class jTPCC implements jTPCCConfig
 	    for (int count = 0; count < 1+informativeText.length(); count++)
 		System.out.print("\b");
 	}
+		} finally {
+			statusLineLock.unlock();
+		}
     }
 }

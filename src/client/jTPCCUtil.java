@@ -70,9 +70,10 @@ public class jTPCCUtil implements jTPCCConfig
 	ResultSet   rs;
 	String      value;
 
+    try {
 	if (dbConn == null)
 	{
-	    dbConn = DriverManager.getConnection(db, dbProps);
+	    dbConn = ShardingJdbc.getConnection(db, dbProps);
 	    stmtGetConfig = dbConn.prepareStatement(
 		"SELECT cfg_value FROM bmsql_config " +
 		" WHERE cfg_name = ?");
@@ -86,6 +87,16 @@ public class jTPCCUtil implements jTPCCConfig
 	rs.close();
 
 	return value;
+    } finally {
+        if (null != stmtGetConfig) {
+            stmtGetConfig.close();
+            stmtGetConfig = null;
+        }
+        if (null != dbConn) {
+            dbConn.close();
+            dbConn = null;
+        }
+    }
     }
 
 } // end jTPCCUtil

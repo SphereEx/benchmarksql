@@ -1,6 +1,9 @@
+--create tablespace example2 location '/opt/opengauss/pg_location/example2';
+--create tablespace example3 location '/opt/opengauss/pg_location/example3';
 create table bmsql_config (
-  cfg_name    varchar(30) primary key,
-  cfg_value   varchar(50)
+  cfg_name    varchar(30),
+  cfg_value   varchar(50),
+  cfg_id int default 0
 );
 
 create table bmsql_warehouse (
@@ -13,7 +16,7 @@ create table bmsql_warehouse (
   w_city      varchar(20),
   w_state     char(2),
   w_zip       char(9)
-);
+) with (FILLFACTOR=80);
 
 create table bmsql_district (
   d_w_id       integer       not null,
@@ -27,7 +30,7 @@ create table bmsql_district (
   d_city       varchar(20),
   d_state      char(2),
   d_zip        char(9)
-);
+) with (FILLFACTOR=80);
 
 create table bmsql_customer (
   c_w_id         integer        not null,
@@ -51,7 +54,10 @@ create table bmsql_customer (
   c_since        timestamp,
   c_middle       char(2),
   c_data         varchar(500)
-);
+) with (FILLFACTOR=80)
+tablespace example2;
+
+--create sequence bmsql_hist_id_seq;
 
 create table bmsql_history (
   hist_id  integer,
@@ -63,13 +69,13 @@ create table bmsql_history (
   h_date   timestamp,
   h_amount decimal(6,2),
   h_data   varchar(24)
-);
+) with (FILLFACTOR=80);
 
 create table bmsql_new_order (
   no_w_id  integer   not null,
   no_d_id  integer   not null,
   no_o_id  integer   not null
-);
+) with (FILLFACTOR=80);
 
 create table bmsql_oorder (
   o_w_id       integer      not null,
@@ -80,7 +86,7 @@ create table bmsql_oorder (
   o_ol_cnt     integer,
   o_all_local  integer,
   o_entry_d    timestamp
-);
+) with (FILLFACTOR=80);
 
 create table bmsql_order_line (
   ol_w_id         integer   not null,
@@ -93,7 +99,7 @@ create table bmsql_order_line (
   ol_supply_w_id  integer,
   ol_quantity     integer,
   ol_dist_info    char(24)
-);
+) with (FILLFACTOR=80);
 
 create table bmsql_item (
   i_id     integer      not null,
@@ -121,6 +127,5 @@ create table bmsql_stock (
   s_dist_08    char(24),
   s_dist_09    char(24),
   s_dist_10    char(24)
-);
-
-
+) with (FILLFACTOR=80)
+tablespace example3;

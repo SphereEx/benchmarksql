@@ -7,19 +7,9 @@
  *
  */
 
-import org.apache.shardingsphere.driver.api.yaml.YamlShardingSphereDataSourceFactory;
-
-import javax.sql.DataSource;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileReader;
-import java.io.IOException;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.Properties;
+import java.io.*;
+import java.sql.*;
+import java.util.*;
 
 
 public class ExecJDBC {
@@ -35,26 +25,20 @@ public class ExecJDBC {
     try {
 
     Properties ini = new Properties();
+    RunConfigSet.runInit(true);
     ini.load( new FileInputStream(System.getProperty("prop")));
 
     // Register jdbcDriver
-    Class.forName(ini.getProperty( "driver" ));
+    String driverName = ini.getProperty("driver");
+    Class.forName(driverName);
 
     // make connection
-        String ssJdbcYamlLocation = ini.getProperty("ssJdbcYamlLocation");
-        if (ssJdbcYamlLocation != null) {
-            // 创建 ShardingSphereDataSource
-            System.out.println("Creating ss datasource ..., jdbcLocation=" + ssJdbcYamlLocation);
-            DataSource dataSource = YamlShardingSphereDataSourceFactory.createDataSource(new File(ssJdbcYamlLocation));
-            conn = dataSource.getConnection();
-        } else {
-            conn = DriverManager.getConnection(ini.getProperty("conn"),
-                    ini.getProperty("user"),ini.getProperty("password"));
-        }
+    Properties dbConnection = new Properties();
+    dbConnection.setProperty("user", ini.getProperty("user"));
+    dbConnection.setProperty("password", ini.getProperty("password"));
+    dbConnection.setProperty("config", (String)ini.getOrDefault("config", ""));
+    conn = ShardingJdbc.getConnection(ini.getProperty("conn"), dbConnection);
     conn.setAutoCommit(true);
-
-    // Create Statement
-    stmt = conn.createStatement();
 
       // Open inputFile
       BufferedReader in = new BufferedReader
@@ -79,8 +63,11 @@ public class ExecJDBC {
 		   sql.append(line.replaceAll("\\\\;", ";"));
 		   if (line.endsWith(";")) {
 		      String query = sql.toString();
-
+               // Create Statement
+               stmt = conn.createStatement();
 		      execJDBC(stmt, query.substring(0, query.length() - 1));
+		      stmt.close();
+		      stmt = null;
 		      sql = new StringBuffer();
 		   } else {
 		     sql.append("\n");
@@ -106,14 +93,15 @@ public class ExecJDBC {
     //exit Cleanly
     } finally {
       try {
-        if (conn !=null)
-           conn.close();
-      } catch(SQLException se) {
-        se.printStackTrace();
-      } // end finally
+          if (conn !=null)
+              conn.close();
+              conn = null;
+          } catch(SQLException se) {
+            se.printStackTrace();
+          } // end finally
 
     } // end try
-
+      System.exit(0);
   } // end main
 
 

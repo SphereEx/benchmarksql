@@ -99,8 +99,8 @@ public class LoadDataWorker implements Runnable
 
 	stmtConfig = dbConn.prepareStatement(
 		"INSERT INTO bmsql_config (" +
-		"  cfg_name, cfg_value) " +
-		"VALUES (?, ?)"
+		"  cfg_name, cfg_value, cfg_id) " +
+		"VALUES (?, ?, 0)"
 	    );
 	stmtItem = dbConn.prepareStatement(
 		"INSERT INTO bmsql_item (" +
@@ -176,26 +176,28 @@ public class LoadDataWorker implements Runnable
 	    {
 		if (job == 0)
 		{
-		    fmt.format("Worker %03d: Loading ITEM", worker);
+		    fmt.format("%s Worker %03d: Loading ITEM",TimeFormat.curStrDataTime(), worker);
 		    System.out.println(sb.toString());
 		    sb.setLength(0);
 
 		    loadItem();
 
-		    fmt.format("Worker %03d: Loading ITEM done", worker);
+		    fmt.format("%s Worker %03d: Loading ITEM done",TimeFormat.curStrDataTime(), worker);
 		    System.out.println(sb.toString());
 		    sb.setLength(0);
 		}
 		else
 		{
-		    fmt.format("Worker %03d: Loading Warehouse %6d",
+		    fmt.format("%s Worker %03d: Loading Warehouse %6d",
+			       TimeFormat.curStrDataTime(),
 			       worker, job);
 		    System.out.println(sb.toString());
 		    sb.setLength(0);
 
 		    loadWarehouse(job);
 
-		    fmt.format("Worker %03d: Loading Warehouse %6d done",
+		    fmt.format("%s Worker %03d: Loading Warehouse %6d done",
+			       TimeFormat.curStrDataTime(),
 			       worker, job);
 		    System.out.println(sb.toString());
 		    sb.setLength(0);

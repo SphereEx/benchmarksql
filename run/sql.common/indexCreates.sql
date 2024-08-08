@@ -1,4 +1,3 @@
-
 alter table bmsql_warehouse add constraint bmsql_warehouse_pkey
   primary key (w_id);
 
@@ -14,11 +13,12 @@ create index bmsql_customer_idx1
 alter table bmsql_oorder add constraint bmsql_oorder_pkey
   primary key (o_w_id, o_d_id, o_id);
 
-create unique index bmsql_oorder_idx1
-  on  bmsql_oorder (o_w_id, o_d_id, o_carrier_id, o_id);
+create index bmsql_oorder_idx1
+  on  bmsql_oorder (o_w_id, o_d_id, o_c_id);
 
 alter table bmsql_new_order add constraint bmsql_new_order_pkey
-  primary key (no_w_id, no_d_id, no_o_id);
+--  primary key (no_w_id, no_d_id, no_o_id);
+ primary key (no_w_id, no_d_id, no_o_id) using index tablespace example2;
 
 alter table bmsql_order_line add constraint bmsql_order_line_pkey
   primary key (ol_w_id, ol_d_id, ol_o_id, ol_number);
@@ -28,4 +28,3 @@ alter table bmsql_stock add constraint bmsql_stock_pkey
 
 alter table bmsql_item add constraint bmsql_item_pkey
   primary key (i_id);
-

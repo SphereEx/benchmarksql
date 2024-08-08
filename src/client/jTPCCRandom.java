@@ -9,10 +9,7 @@
  */
 
 
-import java.io.*;
-import java.sql.*;
-import java.util.*;
-import java.text.*;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class jTPCCRandom
 {
@@ -31,7 +28,7 @@ public class jTPCCRandom
     private static long         nURandCI_ID;
     private static boolean      initialized = false;
 
-    private     Random  random;
+    private     ThreadLocalRandom  random;
 
     /*
      * jTPCCRandom()
@@ -44,7 +41,7 @@ public class jTPCCRandom
 	if (initialized)
 	    throw new IllegalStateException("Global instance exists");
 
-	this.random = new Random(System.nanoTime());
+		this.random = ThreadLocalRandom.current();
 	jTPCCRandom.nURandCLast = nextLong(0, 255);
 	jTPCCRandom.nURandCC_ID = nextLong(0, 1023);
 	jTPCCRandom.nURandCI_ID = nextLong(0, 8191);
@@ -71,7 +68,7 @@ public class jTPCCRandom
 	if (initialized)
 	    throw new IllegalStateException("Global instance exists");
 
-	this.random = new Random(System.nanoTime());
+	this.random = ThreadLocalRandom.current();
 	jTPCCRandom.nURandCC_ID = nextLong(0, 1023);
 	jTPCCRandom.nURandCI_ID = nextLong(0, 8191);
 
@@ -92,7 +89,7 @@ public class jTPCCRandom
 
     private jTPCCRandom(jTPCCRandom parent)
     {
-	this.random = new Random(System.nanoTime());
+	this.random = ThreadLocalRandom.current();
     }
 
     /*
@@ -194,7 +191,22 @@ public class jTPCCRandom
 	return (int)((((nextLong(0, 8191) | nextLong(1, 100000)) + nURandCI_ID)
 	       % 100000) + 1);
     }
-
+	
+	/*
+	 * getItemIdByWarehouse()
+	 *
+	 *     Produce a non uniform random Item ID for every thread.
+	 */
+	public int getItemIdByWarehouse(int warehouse)
+	{
+	    int newItem = (int)(((nextLong(0, 8191) | nextLong(1, 100000)) + nURandCI_ID) % 100000) + 1;
+	    int val = ShardingNumber.oneSharding(warehouse, newItem);
+	    if (val > 100000) {
+	    	val -= PropertiesFactory.instance.shardingNumber;
+		}
+	    return val;
+	}
+	
     /*
      * getCustomerID()
      *

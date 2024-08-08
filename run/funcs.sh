@@ -36,10 +36,10 @@ function setCP()
 	    cp="${cp}:../lib/*"
 	    ;;
 	postgres)
-	    cp="../lib/postgres/*:../lib/*"
+	    cp="../lib/ext/*:../lib/postgres/*:../lib/*"
 	    ;;
     esac
-    myCP=".:${cp}:../dist/*:../lib/ss/*"
+    myCP=".:${cp}:../dist/*"
     export myCP
 }
 

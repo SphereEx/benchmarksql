@@ -54,6 +54,7 @@ public class LoadData
 	 */
 	try
 	{
+		RunConfigSet.runInit();
 	    ini.load(new FileInputStream(System.getProperty("prop")));
 	}
 	catch (IOException e)
@@ -85,6 +86,11 @@ public class LoadData
 	dbProps = new Properties();
 	dbProps.setProperty("user", iniGetString("user"));
 	dbProps.setProperty("password", iniGetString("password"));
+	try {
+		dbProps.setProperty("config", iniGetString("config"));
+	} catch (Exception exp) {
+
+	}
 
 	/*
 	 * Parse other vital information from the props file.
@@ -144,7 +150,7 @@ public class LoadData
 
 	    try
 	    {
-		dbConn = DriverManager.getConnection(db, dbProps);
+		dbConn = ShardingJdbc.getConnection(db, dbProps);
 		dbConn.setAutoCommit(false);
 		if (writeCSV)
 		    workers[i] = new LoadDataWorker(i, csvNullValue,
@@ -201,6 +207,7 @@ public class LoadData
 		System.exit(3);
 	    }
 	}
+	System.exit(0);
     } // End of main()
 
     public static void configAppend(StringBuffer buf)
