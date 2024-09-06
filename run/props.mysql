@@ -1,6 +1,6 @@
 db=postgres
 driver=com.mysql.cj.jdbc.Driver
-conn=jdbc:mysql://152.32.254.149:13306/tpcc_mysql?serverTimezone=UTC&useSSL=false&cachePrepStmts=true&prepStmtCacheSize=8000
+conn=jdbc:mysql://127.0.0.1:13306/tpcc?serverTimezone=UTC&useSSL=false&cachePrepStmts=true&prepStmtCacheSize=8000
 user=root
 password=root
 
