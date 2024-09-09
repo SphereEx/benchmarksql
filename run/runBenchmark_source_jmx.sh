@@ -18,7 +18,7 @@ setCP || exit 1
 
 myOPTS="-Dprop=$1 -DrunID=${SEQ}"
 
-java -javaagent:../lib/jmx_prometheus_javaagent-1.0.1.jar=19123:jmx_config.yaml -cp "$myCP" $myOPTS jTPCC
+java -javaagent:../lib/monitoring/jmx_prometheus_javaagent-0.19.0.jar=19123:jmx_config.yaml -cp "$myCP" $myOPTS jTPCC
 
 
 
