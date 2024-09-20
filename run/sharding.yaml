@@ -1,0 +1,112 @@
+dataSources:
+  ds_0:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.mysql.jdbc.Driver
+    jdbcUrl: jdbc:mysql://10.9.171.233:23306/proxy_sharding_database_table_mysql_5_7_0?loggerLevel=OFF
+    username: root
+    password: root
+  ds_1:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.mysql.jdbc.Driver
+    jdbcUrl: jdbc:mysql://10.9.171.233:23306/proxy_sharding_database_table_mysql_5_7_1?loggerLevel=OFF
+    username: root
+    password: root
+  ds_2:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.mysql.jdbc.Driver
+    jdbcUrl: jdbc:mysql://10.9.171.233:23306/proxy_sharding_database_table_mysql_5_7_2?loggerLevel=OFF
+    username: root
+    password: root
+  ds_3:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.mysql.jdbc.Driver
+    jdbcUrl: jdbc:mysql://10.9.171.233:23306/proxy_sharding_database_table_mysql_5_7_3?loggerLevel=OFF
+    username: root
+    password: root
+
+
+rules:
+- !SINGLE
+  tables:
+    - "*.*"
+- !SHARDING
+  bindingTables:
+    - bmsql_warehouse, bmsql_customer
+    - bmsql_stock, bmsql_district, bmsql_order_line
+  defaultDatabaseStrategy:
+    none:
+  defaultTableStrategy:
+    none:
+  keyGenerators:
+    snowflake:
+      type: SNOWFLAKE
+  autoTables:
+    bmsql_warehouse:
+      actualDataSources: ds_${0..3}
+      shardingStrategy:
+        standard:
+          shardingColumn: w_id
+          shardingAlgorithmName: mod_1
+
+    bmsql_district:
+      actualDataSources: ds_${0..3}
+      shardingStrategy:
+        standard:
+          shardingColumn: d_w_id
+          shardingAlgorithmName: mod_1
+
+    bmsql_customer:
+      actualDataSources: ds_${0..3}
+      shardingStrategy:
+        standard:
+          shardingColumn: c_w_id
+          shardingAlgorithmName: mod_1
+
+    bmsql_item:
+      actualDataSources: ds_${0..3}
+      shardingStrategy:
+        standard:
+          shardingColumn: i_id
+          shardingAlgorithmName: mod_1
+
+    bmsql_history:
+      actualDataSources: ds_${0..3}
+      shardingStrategy:
+        standard:
+          shardingColumn: h_w_id
+          shardingAlgorithmName: mod_1
+
+    bmsql_oorder:
+      actualDataSources: ds_${0..3}
+      shardingStrategy:
+        standard:
+          shardingColumn: o_w_id
+          shardingAlgorithmName: mod_1
+
+    bmsql_stock:
+      actualDataSources: ds_${0..3}
+      shardingStrategy:
+        standard:
+          shardingColumn: s_w_id
+          shardingAlgorithmName: mod_1
+
+    bmsql_new_order:
+      actualDataSources: ds_${0..3}
+      shardingStrategy:
+        standard:
+          shardingColumn: no_w_id
+          shardingAlgorithmName: mod_1
+
+    bmsql_order_line:
+      actualDataSources: ds_${0..3}
+      shardingStrategy:
+        standard:
+          shardingColumn: ol_w_id
+          shardingAlgorithmName: mod_1
+
+  shardingAlgorithms:
+    mod_1:
+      type: MOD
+      props:
+        sharding-count: 16
+

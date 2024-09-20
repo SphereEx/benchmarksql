@@ -1,8 +1,8 @@
 db=postgres
 driver=com.mysql.jdbc.Driver
-conn=jdbc:mysql://127.0.0.1:3307/sharding_db?loggerLevel=OFF
-user=sharding
-password=sharding
+conn=jdbc:mysql://127.0.0.1:3307/test?loggerLevel=OFF
+user=root
+password=root
 
 warehouses=10
 loadWorkers=11
@@ -11,7 +11,7 @@ terminals=10
 //To run specified transactions per terminal- runMins must equal zero
 runTxnsPerTerminal=0
 //To run for specified minutes- runTxnsPerTerminal must equal zero
-runMins=3
+runMins=30
 //Number of total transactions per minute
 limitTxnsPerMin=0
 
