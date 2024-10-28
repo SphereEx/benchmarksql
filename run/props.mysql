@@ -1,15 +1,15 @@
 db=postgres
 driver=com.mysql.cj.jdbc.Driver
-conn=jdbc:mysql://127.0.0.1:13306/tpcc?serverTimezone=UTC&useSSL=false&cachePrepStmts=true&prepStmtCacheSize=8000
+conn=jdbc:mysql://127.0.0.1:13306/tpcc_mysql_5_7?serverTimezone=UTC&useSSL=false&cachePrepStmts=true&prepStmtCacheSize=8000&allowPublicKeyRetrieval=true
 user=root
 password=root
 
 # 本地测试可以适当调小
-warehouses=1
-loadWorkers=5
+warehouses=10
+loadWorkers=11
 
 # 本地测试可以适当调小
-terminals=5
+terminals=10
 //To run specified transactions per terminal- runMins must equal zero
 runTxnsPerTerminal=0
 //To run for specified minutes- runTxnsPerTerminal must equal zero
