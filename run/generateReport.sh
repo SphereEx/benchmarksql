@@ -95,7 +95,7 @@ big		{ font-weight: 900;
 
   <p>
     This TPC-C style benchmark run was performed by the "$(getRunInfo driver)"
-    driver of BenchmarkSQL version $(getRunInfo driverVersion). 
+    driver of BenchmarkSQL version $(getRunInfo driverVersion).
   </p>
 _EOF_
 
@@ -145,7 +145,7 @@ cat >> report.html <<_EOF_
     <table width="${TABLE_WIDTH}" border="2">
     <tr>
       <th rowspan="2" width="16%"><b>Transaction<br/>Type</b></th>
-      <th colspan="2" width="24%"><b>Latency</b></th>
+      <th colspan="5" width="24%"><b>Latency</b></th>
       <th rowspan="2" width="12%"><b>Count</b></th>
       <th rowspan="2" width="12%"><b>Percent</b></th>
       <th rowspan="2" width="12%"><b>Rollback</b></th>
@@ -154,19 +154,25 @@ cat >> report.html <<_EOF_
     </tr>
     <tr>
       <th width="12%"><b>90th&nbsp;%</b></th>
+      <th width="12%"><b>95th&nbsp;%</b></th>
+      <th width="12%"><b>99th&nbsp;%</b></th>
+      <th width="12%"><b>Average</b></th>
       <th width="12%"><b>Maximum</b></th>
     </tr>
 _EOF_
 
 tr ',' ' ' <data/tx_summary.csv | \
-    while read name count percent ninth max limit rbk error dskipped ; do
+    while read name count percent ninety ninety_five ninety_nine avg max limit rbk error dskipped ; do
 	[ ${name} == "tx_name" ] && continue
 	[ ${name} == "tpmC" ] && continue
 	[ ${name} == "tpmTotal" ] && continue
 
 	echo "    <tr>"
 	echo "      <td align=\"left\">${name}</td>"
-	echo "      <td align=\"right\">${ninth}</td>"
+	echo "      <td align=\"right\">${ninety}</td>"
+	echo "      <td align=\"right\">${ninety_five}</td>"
+	echo "      <td align=\"right\">${ninety_nine}</td>"
+	echo "      <td align=\"right\">${avg}</td>"
 	echo "      <td align=\"right\">${max}</td>"
 	echo "      <td align=\"right\">${count}</td>"
 	echo "      <td align=\"right\">${percent}</td>"
@@ -200,7 +206,7 @@ cat >>report.html <<_EOF_
     transactions per minute per warehouse. In reality this value cannot
     be reached because it would require a perfect mix with 45% of NEW_ORDER
     transactions and a ZERO response time from the System under Test
-    including the database. 
+    including the database.
   </p>
   <p>
     The above tpmC of ${tpmC} is ${tpmCpct} of that theoretical maximum for a
@@ -220,7 +226,7 @@ cat >>report.html <<_EOF_
     tpmC is the number of NEW_ORDER Transactions, that where processed
     per minute. tpmTOTAL is the number of Transactions processed per
     minute for all transaction types, but without the background part
-    of the DELIVERY transaction. 
+    of the DELIVERY transaction.
 
     <br/>
     <img src="tpm_nopm.png"/>
@@ -241,7 +247,7 @@ cat >>report.html <<_EOF_
   </h3>
   <p>
     The percentages for User, System and IOWait CPU time are stacked
-    on top of each other. 
+    on top of each other.
 
     <br/>
     <img src="cpu_utilization.png"/>
@@ -259,7 +265,7 @@ cat >>report.html <<_EOF_
     copied into a kernel buffer. Several tuning parameters control
     when the OS is actually transferring these dirty buffers to
     the IO controller(s) in order to eventually get written to
-    real disks (or similar). 
+    real disks (or similar).
 
     <br/>
     <img src="dirty_buffers.png"/>

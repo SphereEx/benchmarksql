@@ -1,6 +1,6 @@
 db=postgres
 driver=com.mysql.cj.jdbc.Driver
-conn=jdbc:mysql://127.0.0.1:13306/tpcc_mysql_5_7?serverTimezone=UTC&useSSL=false&cachePrepStmts=true&prepStmtCacheSize=8000&allowPublicKeyRetrieval=true
+conn=jdbc:mysql://127.0.0.1:13306/benchmarksql?serverTimezone=UTC&useSSL=false&cachePrepStmts=true
 user=root
 password=root
 
@@ -32,8 +32,8 @@ stockLevelWeight=4
 // Directory name to create for collecting detailed result data.
 // Comment this out to suppress.
 resultDirectory=my_result_%tY-%tm-%td_%tH%tM%tS
-//osCollectorScript=./misc/os_collector_linux.py
-//osCollectorInterval=1
-//osCollectorSSHAddr=user@dbhost
-//osCollectorDevices=net_eth0 blk_sda
+osCollectorScript=./misc/os_collector_linux.py
+osCollectorInterval=1
+//osCollectorSSHAddr=root@127.0.0.1
+osCollectorDevices=net_eth0 blk_sda
 shardingNumber=1
